@@ -23,6 +23,7 @@ diamond or kraken as needed.
 """
 RUN_DIAMOND = True
 RUN_KRAKEN = True
+RUN_REMOVEHUMAN = True
 
 ####################
 ## DAG definition ##
@@ -60,14 +61,16 @@ dag = DAG(
     schedule_interval="@once"
 )
 
-launch_removeHuman = HopsworksLaunchOperator(dag=dag,
-                                            project_name=PROJECT_NAME,
-                                            task_id="launch_removeHuman",
-                                            job_name="removeHuman",
-                                            job_arguments=SETTINGS,
-                                            wait_for_completion=True)
+if RUN_REMOVEHUMAN:
 
-wait_removeHuman = HopsworksJobSuccessSensor(dag=dag,
+    launch_removeHuman = HopsworksLaunchOperator(dag=dag,
+                                                project_name=PROJECT_NAME,
+                                                task_id="launch_removeHuman",
+                                                job_name="removeHuman",
+                                                job_arguments=SETTINGS,    
+                                                wait_for_completion=True)
+
+    wait_removeHuman = HopsworksJobSuccessSensor(dag=dag,
                                             project_name=PROJECT_NAME,
                                             task_id="wait_removeHuman",
                                             job_name="removeHuman")
@@ -135,9 +138,10 @@ wait_SortConvertRun2 = HopsworksJobSuccessSensor(dag=dag,
                                              job_name="SortConvert")
 
 
-
-wait_removeHuman.set_upstream(launch_removeHuman)
-launch_SortConvertRun1.set_upstream(wait_removeHuman)
+if RUN_REMOVEHUMAN:
+    wait_removeHuman.set_upstream(launch_removeHuman)
+    launch_SortConvertRun1.set_upstream(wait_removeHuman)
+    
 wait_SortConvertRun1.set_upstream(launch_SortConvertRun1)
 launch_Trimming.set_upstream(wait_SortConvertRun1)
 wait_Trimming.set_upstream(launch_Trimming)
